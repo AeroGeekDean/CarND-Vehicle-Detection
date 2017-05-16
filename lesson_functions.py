@@ -2,6 +2,8 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 from skimage.feature import hog
+import pdb
+
 # Define a function to return HOG features and visualization
 def get_hog_features(img, orient, pix_per_cell, cell_per_block,
                         vis=False, feature_vec=True):
@@ -24,9 +26,7 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block,
 
 # Define a function to compute binned color features
 def bin_spatial(img, size=(32, 32)):
-    # Use cv2.resize().ravel() to create the feature vector
     features = cv2.resize(img, size).ravel()
-    # Return the feature vector
     return features
 
 # Define a function to compute color histogram features
@@ -95,6 +95,12 @@ def extract_features(img_files, color_space='RGB', spatial_size=(32, 32),
     # Iterate through the list of images
     for file in img_files:
         img = mpimg.imread(file)
+
+        # force input img to be of range (0,255) 'uint8', for consistency sake
+        if np.max(img)<=1.0:
+            img = img*255
+            img = img.astype(np.uint8)
+
         out = single_img_features(img, color_space=color_space,
                                   spatial_size=spatial_size,
                                   hist_bins=hist_bins,
@@ -178,13 +184,25 @@ def visualise(fig, rows, cols, imgs, titles):
             plt.title(titles[i])
     return
 
+def convert_color(img, conv='RGB2YCrCb'):
+    if conv == 'RGB2YCrCb':
+        return cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
+    if conv == 'BGR2YCrCb':
+        return cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    if conv == 'RGB2LUV':
+        return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+
 # Define a single function that can extract features using hog sub-sampling and make predictions
 def find_cars(img, ystart, ystop, scale, svc, X_scaler,
               orient, pix_per_cell, cell_per_block, spatial_size, hist_bins):
     bbox_list = []
-    draw_img = np.copy(img)
 
-    img = img.astype(np.float32)/255 # convert to [0,1] range
+    # force input img to be of range (0,255) 'uint8', for consistency sake
+    if np.max(img)<=1.0:
+        img = img*255
+        img = img.astype(np.uint8)
+    
+    draw_img = np.copy(img)
 
     img_tosearch = img[ystart:ystop,:,:]
     ctrans_tosearch = convert_color(img_tosearch, conv='RGB2YCrCb')
@@ -270,6 +288,6 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler,
                 corner2 = (xbox_left+win_draw, ytop_draw+win_draw+ystart)
 
                 # could return list of window bounding boxes instead.
-                bbox_list.append(corner1, corner2)
+                bbox_list.append((corner1, corner2))
                 cv2.rectangle(draw_img, corner1, corner2, (0,0,255), 6) # blue box
     return bbox_list, draw_img
