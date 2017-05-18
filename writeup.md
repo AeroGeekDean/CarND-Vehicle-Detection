@@ -264,13 +264,12 @@ def find_vehicles(img):
     scales = [1.0, 2.0]
 #     scales = [0.75, 1.0, 1.5, 2.0] # orig planned scales to use
     threshold_static = 1
-    threshold_dynamic = 1
-    decay_rate = 2
-    max_val = 127 # for int8
+    threshold_dynamic = 0
+    decay_rate = 1
+    max_val = 255 # for uint8
 
-    # switched from uint8 to int8 in for to implement decaying (decrement + np.clip())
-    # capability below for values near 1, 0, and -1.
-    heatmap = np.zeros(img.shape[:2]).astype(np.int8)
+    # init a new 'cold' heatmap
+    heatmap = np.zeros(img.shape[:2]).astype(np.uint8)
 
     # loop thru all the search window sizes
     for scale in scales:
@@ -281,16 +280,12 @@ def find_vehicles(img):
     heatmap = apply_threshold(heatmap, threshold_static)
     heatmap = np.clip(heatmap, 0, max_val) # max value of int8
 
-    # add heatmap into circular buffer
+    # decay the existing heatmap history, before adding latest heatmap
+    for hm in heatmap_history:
+        hm[hm>0] -= decay_rate
     heatmap_history.append(heatmap)
 
-#     heatmap_total = np.sum(heatmap_history, axis=0) # this is before adding 'decay'
-
-    # cool off the heatmap by decay_rate
-    f = lambda a,b: a + np.clip((b-decay_rate),0,max_val)
-    heatmap_total = reduce(f, heatmap_history)
-
-    heatmap_total = apply_threshold(heatmap_total, threshold_dynamic)
+    heatmap_total = np.sum(heatmap_history, axis=0)
 
     # search for contiguous heat regions
     labels = label(heatmap_total) # labels is a tuple
@@ -311,6 +306,4 @@ The approach for this project was pretty straight forward. The biggest problem w
 
 2. optimal parameters for the time-dependent effect of decaying circular buffers and static + dynamic thresholds (discussed above). This was aimed more towards quickly eliminating residual effects of correctly identifying fleeting objects (such as vehicle in the on-coming lanes), without sacrificing performance of true-positives of vehicles nearby.
 
-The time-dependent parameter tweaking was difficult due to the long processing time for the 50sec-long video. Each processing iteration took about ~30 minutes on my Late-2012 era Mac Mini with Intel Quad Core i7. I made about 10 iterations trying to tweak the parameters, to then finally decided to settle with the result from back on my 5th iteration! :joy:
-
-Additionally, my decaying circular buffer idea might not be the best way to tackle this problem. It was just the first idea that seemed feasible in both my software implementation skills and providing adequate project performance to finish SDC Term-1 prior to my deadline of **today** (5/17/2017)!! :scream:
+The time-dependent parameter tweaking was time consuming due to the long processing time for the 50sec-long video. Each processing iteration took about ~30 minutes on my computer (Late-2012 era Mac Mini with Intel Quad Core i7). I made about 15 iterations before choosing result from one of the earlier iterations.
