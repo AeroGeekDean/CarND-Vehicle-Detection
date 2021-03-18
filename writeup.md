@@ -28,7 +28,7 @@ The goals / steps of this project are the following:
 
 Overall, the code base is a collection of functions within the file [`'lesson_functions.py'`](./lesson_functions.py). These functions were taken originally from the course lesson examples, and modified to suit the needs of this project.
 
-The notional 'main()' portion of the project is the Jupyter notebook file [`'P5-Project_notebook.jpynb'`](./P5-Project_notebook.jpynb), which imports the functions from `'lesson_functions.py'` and describes the steps taken for:
+The notional 'main()' portion of the project is the Jupyter notebook file [`'P5-Project_notebook.ipynb'`](./P5-Project_notebook.ipynb), which imports the functions from `'lesson_functions.py'` and describes the steps taken for:
 - feature extractions from train/test images
   - spatial down-sample binning
   - colorspace histogram
